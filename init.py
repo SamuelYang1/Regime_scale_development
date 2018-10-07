@@ -49,7 +49,7 @@ class Bend:
                 if Is_in_border:
                     self.In_border[self.ID[i][j]].append ((i, j))
     def cal_mr(self):
-        # 边际收益，一通乱搞，暂时不写
+        # 边际收益
         sq2=math.sqrt(2)
         self.marginal_revenue = [[[[0.0 for i in range(self.n)] for i in range(self.m)] for i in range(self.n)] for i in range(self.m)]
         Tr = [[0.0 for i in range(self.n)] for i in range(self.m)]
@@ -74,12 +74,10 @@ class Bend:
                 for x in range(self.m):
                     for y in range(self.n):
                         b=(x,y)
-                        self.marginal_revenue[i][j][x][y]=math.exp(p[a][b])
-        #print(self.marginal_revenue[0][3][2][3])
+                        self.marginal_revenue[i][j][x][y]=self.L[i][j]*math.exp(p[a][b])
     def evolution(self):
         changed=True
         while changed:
-            changed=False
             # 分配
             self.allocate = [[[0 for i in range(self.n)] for i in range(self.m)] for i in range(self.r)]
             for i in range(self.m):
@@ -111,6 +109,6 @@ class Bend:
                     for i in range(self.r):
                         if self.allocate[i][x][y]>self.allocate[new_id][x][y]:
                             new_id=i
-                            chanegd=True
+                            changed=True
                     self.ID[x][y]=new_id
-            self.cal_mr()
+            self.init_boder()
