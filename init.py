@@ -15,9 +15,9 @@ class Bend:
         self.ID = [[0 for i in range(self.n)] for i in range(self.m)]
         with open('labor.txt')as lb, open('transportation.txt')as tr, open('regime.txt')as rg:
             for i in range(self.m):
-                s_lb = lb.readline().split(' ')
-                s_tr = tr.readline().split(' ')
-                s_rg = rg.readline().split(' ')
+                s_lb = lb.readline().split('\t')
+                s_tr = tr.readline().split('\t')
+                s_rg = rg.readline().split('\t')
                 for j in range(self.n):
                     self.L[i][j] = float(s_lb[j])
                     self.T[i][j] = float(s_tr[j])
@@ -55,7 +55,7 @@ class Bend:
         Tr = [[0.0 for i in range(self.n)] for i in range(self.m)]
         for i in range(self.m):
             for j in range(self.n):
-                Tr[i][j]=math.log(self.T[i][j])
+                Tr[i][j]=-math.log(self.T[i][j])
         G = nx.Graph()
         for i in range(self.m):
             for j in range(self.n):
@@ -67,6 +67,7 @@ class Bend:
                         G.add_edge((i, j), (i - 1, j-1), weight=(Tr[i][j] + Tr[i - 1][j-1]) / 2*sq2)
                     if i+1<self.m:
                         G.add_edge((i, j), (i + 1, j - 1), weight=(Tr[i][j] + Tr[i + 1][j - 1]) / 2 * sq2)
+        print("cal_mr start")
         p=dict(nx.shortest_path_length(G,weight="weight"))
         for i in range(self.m):
             for j in range(self.n):
@@ -74,16 +75,27 @@ class Bend:
                 for x in range(self.m):
                     for y in range(self.n):
                         b=(x,y)
-                        self.marginal_revenue[i][j][x][y]=self.L[i][j]*math.exp(p[a][b])
+                        self.marginal_revenue[i][j][x][y]=self.L[i][j]*(math.exp(-p[a][b]+Tr[i][j]/2))
     def evolution(self):
         changed=True
+        num=0
         while changed:
+            num+=1
+            #print("第",num,"轮演化")
+            s="output/result"+str(num)+".txt"
+            with open(s,"w+") as op:
+                for i in range(self.m):
+                    for j in range(self.n):
+                        op.write(str(self.ID[i][j])+'\t')
+                    op.write('\n')
             # 分配
-            self.allocate = [[[0 for i in range(self.n)] for i in range(self.m)] for i in range(self.r)]
+            self.allocate = [[[0.0 for i in range(self.n)] for i in range(self.m)] for i in range(self.r)]
             for i in range(self.m):
                 for j in range(self.n):
                     id = self.ID[i][j]
                     max_profit = 0.0
+                    mx=0
+                    my=0
                     for k in self.In_border[id]:
                         (x, y) = k
                         if self.marginal_revenue[i][j][x][y] > max_profit:
@@ -91,7 +103,6 @@ class Bend:
                             mx = x
                             my = y
                     self.allocate[id][mx][my] += max_profit
-                    #mx, my = 0
                     max_profit = 0.0
                     for k in self.Out_border[id]:
                         (x, y) = k
