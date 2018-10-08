@@ -8,7 +8,7 @@ class Bend:
             self.m = int(p[0])
             self.n = int(p[1])
             self.r=int(p[2])
-
+            
         #读入劳动力资源，交通成本和政权
         self.L = [[0.0 for i in range(self.n)] for i in range(self.m)]
         self.T = [[0.0 for i in range(self.n)] for i in range(self.m)]
