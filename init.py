@@ -115,16 +115,16 @@ class Bend:
                     self.allocate[id][mx][my] += self.path_length[i][j][mx][my]*self.L[i][j]
             #第一次演化
             for id in range(self.r):
-                temp = copy.deepcopy(self.In_border[id])
-                for k in self.In_border[id]:
+                temp = copy.deepcopy(self.Out_border[id])
+                for k in self.Out_border[id]:
                     (x,y)=k
-                    for i in range(self.r):
-                        if i!=id and self.allocate[i][x][y]<=self.allocate[id][x][y]:
-                            if self.Out_border[i].count(k)>0:
-                                self.Out_border[i].remove(k)
-                                if temp.count(k) > 0:
-                                    temp.remove(k)
-                self.In_border[id]=copy.deepcopy(temp)
+                    b_id=self.ID[x][y]
+                    if self.allocate[id][x][y]<=self.allocate[b_id][x][y]:
+                        if self.In_border[b_id].count(k)>0:
+                            self.In_border[b_id].remove(k)
+                        if temp.count(k) > 0:
+                            temp.remove(k)
+                self.Out_border[id]=copy.deepcopy(temp)
             #第二次分配
             self.allocate = [[[0.0 for i in range(self.n)] for i in range(self.m)] for i in range(self.r)]
             for i in range(self.m):
@@ -143,12 +143,10 @@ class Bend:
             #第二次演化
             changed = False
             for id in range(self.r):
-                for k in self.In_border[id]:
+                for k in self.Out_border[id]:
                     (x, y) = k
-                    new_id = self.ID[x][y]
-                    for i in range(self.r):
-                        if self.allocate[i][x][y] > self.allocate[new_id][x][y]:
-                            new_id = i
-                            changed = True
-                    self.ID[x][y] = new_id
+                    b_id = self.ID[x][y]
+                    if self.allocate[id][x][y] > self.allocate[b_id][x][y]:
+                        self.ID[x][y]=id
+                        changed=True
             self.init_boder()
