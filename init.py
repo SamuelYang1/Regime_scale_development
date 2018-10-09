@@ -117,7 +117,7 @@ class Bend:
             for id in range(self.r):
                 for k in self.Out_border[id]:
                     (x,y)=k
-                    new_id=id
+                    new_id=self.ID[x][y]
                     for i in range(self.r):
                         if self.allocate[i][x][y]>self.allocate[new_id][x][y]:
                             new_id=i
