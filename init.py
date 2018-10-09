@@ -51,7 +51,7 @@ class Bend:
     def cal_mr(self):
         # 边际收益
         sq2=math.sqrt(2)
-        self.marginal_revenue = [[[[0.0 for i in range(self.n)] for i in range(self.m)] for i in range(self.n)] for i in range(self.m)]
+        self.path_length = [[[[0.0 for i in range(self.n)] for i in range(self.m)] for i in range(self.n)] for i in range(self.m)]
         Tr = [[0.0 for i in range(self.n)] for i in range(self.m)]
         for i in range(self.m):
             for j in range(self.n):
@@ -75,13 +75,14 @@ class Bend:
                 for x in range(self.m):
                     for y in range(self.n):
                         b=(x,y)
-                        self.marginal_revenue[i][j][x][y]=self.L[i][j]*(math.exp(-p[a][b]+Tr[i][j]/2))
+                        self.path_length[i][j][x][y]=math.exp(-p[a][b]+Tr[i][j]/2)
+        print("cal_mr end")
     def evolution(self):
         changed=True
         num=0
         while changed:
             num+=1
-            #print("第",num,"轮演化")
+            print("第",num,"轮演化")
             s="output/result"+str(num)+".txt"
             with open(s,"w+") as op:
                 for i in range(self.m):
@@ -98,19 +99,19 @@ class Bend:
                     my=0
                     for k in self.In_border[id]:
                         (x, y) = k
-                        if self.marginal_revenue[i][j][x][y] > max_profit:
-                            max_profit = self.marginal_revenue[i][j][x][y]
+                        if self.path_length[i][j][x][y]*self.L[x][y] > max_profit:
+                            max_profit = self.path_length[i][j][x][y]*self.L[x][y]
                             mx = x
                             my = y
-                    self.allocate[id][mx][my] += max_profit
+                    self.allocate[id][mx][my] += self.path_length[i][j][mx][my]*self.L[i][j]
                     max_profit = 0.0
                     for k in self.Out_border[id]:
                         (x, y) = k
-                        if self.marginal_revenue[i][j][x][y] > max_profit:
-                            max_profit = self.marginal_revenue[i][j][x][y]
+                        if self.path_length[i][j][x][y]*self.L[x][y] > max_profit:
+                            max_profit = self.path_length[i][j][x][y]*self.L[x][y]
                             mx = x
                             my = y
-                    self.allocate[id][mx][my] += max_profit
+                    self.allocate[id][mx][my] += self.path_length[i][j][mx][my]*self.L[i][j]
             #演化
             changed=False
             for id in range(self.r):
