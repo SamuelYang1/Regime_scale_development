@@ -1,6 +1,24 @@
 import math
 import networkx as nx
 import copy
+def cm(a,b):
+    ((x, y), id, (x1, y1), (x2, y2), tmp1)=a
+    ((x, y), id, (x1, y1), (x2, y2), tmp2)=b
+    if tmp1<tmp2:
+        return -1
+    elif tmp1==tmp2:
+        return 0
+    else:
+        return 1
+def cm3(a,b):
+    (x,y, tmp1) = a
+    (x,y, tmp2) = b
+    if tmp1 < tmp2:
+        return -1
+    elif tmp1 == tmp2:
+        return 0
+    else:
+        return 1
 class Bend:
     def __init__(self):
         #读入数据规模
@@ -23,7 +41,6 @@ class Bend:
                     self.L[i][j] = float(s_lb[j])
                     self.T[i][j] = float(s_tr[j])
                     self.ID[i][j] = int(s_rg[j])
-        self.init_boder()
     def init_boder(self):
         # 初始化边缘带表
         self.Out_border = [[] for i in range(self.r)]
@@ -78,10 +95,111 @@ class Bend:
                         b=(x,y)
                         self.path_length[i][j][x][y]=math.exp(-p[a][b]+Tr[i][j]/2)
         print("cal_mr end")
+    def init_war_border(self):#交战带确定
+        # 分配
+        allocate = [[[0.0 for i in range(self.n)] for i in range(self.m)] for i in range(self.r)]
+        for i in range(self.m):
+            for j in range(self.n):
+                id = self.ID[i][j]
+                max_profit = 0.0
+                mx = 0
+                my = 0
+                for k in self.In_border[id]:
+                    (x, y) = k
+                    if self.path_length[i][j][x][y] * self.L[x][y] > max_profit:
+                        max_profit = self.path_length[i][j][x][y] * self.L[x][y]
+                        mx = x
+                        my = y
+                allocate[id][mx][my] += self.path_length[i][j][mx][my] * self.L[i][j]
+                max_profit = 0.0
+                for k in self.Out_border[id]:
+                    (x, y) = k
+                    if self.path_length[i][j][x][y] * self.L[x][y] > max_profit:
+                        max_profit = self.path_length[i][j][x][y] * self.L[x][y]
+                        mx = x
+                        my = y
+                allocate[id][mx][my] += self.path_length[i][j][mx][my] * self.L[i][j]
+        # 交战带确定
+        self.War_border = [[] for i in range(self.r)]
+        self.War = []
+        self.War_re=[[[] for i in range(self.n)]for i in range(self.m)]
+        for id in range(self.r):
+            for (x,y) in self.Out_border[id]:
+                b_id = self.ID[x][y]
+                if allocate[id][x][y] > allocate[b_id][x][y]:
+                    if self.War_border[id].count((x, y)) == 0:
+                        self.War_border[id].append((x, y))
+                    if self.War_border[b_id].count((x, y)) == 0:
+                        self.War_border[b_id].append((x, y))
+                    if self.War_re[x][y].count(id)==0:
+                        self.War_re[x][y].append(id)
+                    if self.War_re[x][y].count(b_id) == 0:
+                        self.War_re[x][y].append(b_id)
+                    if self.War.count((x, y)) == 0:
+                        self.War.append((x, y))
+    def init_allocate(self):
+        self.moved = [[[[] for i in range(self.n)] for i in range(self.m)] for i in range(self.r)]
+        self.K = [[[0.0 for i in range(self.n)] for i in range(self.m)] for i in range(self.r)]
+        for i in range(self.m):
+            for j in range(self.n):
+                id = self.ID[i][j]
+                for (x,y,l) in self.move[i][j]:
+                    self.K[id][x][y]+=l*self.path_length[i][j][x][y]
+                    self.moved[id][x][y].append((i,j))
+        self.Dis=[[0.0 for i in range(self.n)] for i in range(self.m)]
+        self.Advantage=[[0 for i in range(self.n)] for i in range(self.m)]
+        self.Disadvantage=[[]for i in range(self.r)]
+        for (x,y) in self.War:
+            max1=0
+            max2=0
+            for id in self.War_re[x][y]:
+                if max1<self.K[id][x][y]:
+                    max2=max1
+                    max1=self.K[id][x][y]
+                    self.Advantage[x][y]=id
+                elif max2<self.K[id][x][y]:
+                    max2=self.K[id][x][y]
+            self.Dis[x][y]=max2-max1
+            for id in self.War_re[x][y]:
+                if id!=self.Advantage[x][y]:
+                    self.Disadvantage[id].append((x,y))
+    def init_cmp_advantage(self):
+        self.cmp_advantage=[]
+        for (x,y) in self.War:
+            id=self.Advantage[x][y]
+            minn=1e9+0.1
+            added = ((0, 0), 0, (0, 0), (0, 0), 0.0)
+            for (x1,y1) in self.moved[id][x][y]:
+                for (x2,y2) in self.Disadvantage[id]:
+                    tmp=self.path_length[x1][y1][x][y]*self.L[x][y]-self.path_length[x1][y1][x2][y2]*self.L[x2][y2]
+                    if tmp<minn:
+                        minn=tmp
+                        added=((x,y),id,(x1,y1),(x2,y2),tmp)
+            self.cmp_advantage.append(added)
+        self.cmp_advantage.sort(cm)
+    def change(self):
+        for ((x,y),id,(x1,y1),(x2,y2),tmp) in self.cmp_advantage:
+            if len(self.Disadvantage[id])>0:
+                if self.L[x1][y1]*self.path_length[x1][y1][x][y]<self.Dis[x][y]-0.01:
+                    self.move[x1][y1].clear()
+                    self.move[x1][y1].append((x2,y2,self.L[x1][y1]))
+                    #asdaf
+                else:
+                    for (p,q,wwww) in self.alloc_order[x1][y1]:
+                        if p!=x or q!=y:
+                            self.move[x1][y1].clear()
+                            self.move[x1][y1].append((x,y,(self.Dis[x][y]-0.01)/self.path_length[x1][y1][x][y]))
+                            self.move[x1][y1].append((p, q, self.L[x1][y1]-(self.Dis[x][y] - 0.01) / self.path_length[x1][y1][x][y]))
+                            break
+                self.init_allocate()
+                self.init_cmp_advantage()
+
+
     def evolution(self):
         changed=True
         num=0
         while changed:
+            self.init_boder()
             num+=1
             print("第",num,"轮演化")
             s="output/result"+str(num)+".txt"
@@ -90,63 +208,30 @@ class Bend:
                     for j in range(self.n):
                         op.write(str(self.ID[i][j])+'\t')
                     op.write('\n')
-            # 第一次分配
-            self.allocate = [[[0.0 for i in range(self.n)] for i in range(self.m)] for i in range(self.r)]
+            self.init_war_border()
+            #生成分配次序表
+            self.alloc_order=[[[] for i in range(self.n)] for i in range(self.m)]
             for i in range(self.m):
                 for j in range(self.n):
                     id = self.ID[i][j]
-                    max_profit = 0.0
-                    mx=0
-                    my=0
-                    for k in self.In_border[id]:
-                        (x, y) = k
-                        if self.path_length[i][j][x][y]*self.L[x][y] > max_profit:
-                            max_profit = self.path_length[i][j][x][y]*self.L[x][y]
-                            mx = x
-                            my = y
-                    self.allocate[id][mx][my] += self.path_length[i][j][mx][my]*self.L[i][j]
-                    max_profit = 0.0
-                    for k in self.Out_border[id]:
-                        (x, y) = k
-                        if self.path_length[i][j][x][y]*self.L[x][y] > max_profit:
-                            max_profit = self.path_length[i][j][x][y]*self.L[x][y]
-                            mx = x
-                            my = y
-                    self.allocate[id][mx][my] += self.path_length[i][j][mx][my]*self.L[i][j]
-            #第一次演化
-            for id in range(self.r):
-                temp = copy.deepcopy(self.Out_border[id])
-                for k in self.Out_border[id]:
-                    (x,y)=k
-                    b_id=self.ID[x][y]
-                    if self.allocate[id][x][y]<=self.allocate[b_id][x][y]:
-                        if self.In_border[b_id].count(k)>0:
-                            self.In_border[b_id].remove(k)
-                        if temp.count(k) > 0:
-                            temp.remove(k)
-                self.Out_border[id]=copy.deepcopy(temp)
-            #第二次分配
-            self.allocate = [[[0.0 for i in range(self.n)] for i in range(self.m)] for i in range(self.r)]
+                    for (x,y) in self.War_border[id]:
+                        self.alloc_order[i][j].append((x,y,self.path_length[i][j][x][y]*self.L[x][y]))
+                    self.alloc_order[i][j].sort(cmp=cm3,reverse=True)
+            #初始分配
+            self.move=[[[] for i in range(self.n)] for i in range(self.m)]
             for i in range(self.m):
                 for j in range(self.n):
                     id = self.ID[i][j]
                     max_profit = 0.0
                     mx = 0
                     my = 0
-                    for k in self.In_border[id]+self.Out_border[id]:
-                        (x, y) = k
-                        if self.path_length[i][j][x][y] * self.L[x][y] > max_profit:
-                            max_profit = self.path_length[i][j][x][y] * self.L[x][y]
+                    for (x, y, profit) in self.alloc_order[i][j]:
+                        if profit > max_profit:
                             mx = x
                             my = y
-                    self.allocate[id][mx][my] += self.path_length[i][j][mx][my] * self.L[i][j]
-            #第二次演化
-            changed = False
-            for id in range(self.r):
-                for k in self.Out_border[id]:
-                    (x, y) = k
-                    b_id = self.ID[x][y]
-                    if self.allocate[id][x][y] > self.allocate[b_id][x][y]:
-                        self.ID[x][y]=id
-                        changed=True
-            self.init_boder()
+                            max_profit = profit
+                    self.move[i][j].append((mx,my,self.L[i][j]))
+
+            self.init_allocate()
+            self.init_cmp_advantage()
+            self.change()
