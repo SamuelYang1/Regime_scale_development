@@ -157,22 +157,22 @@ class Bend:
             minn=1e9+0.1
             added = ((0, 0), 0, (0, 0), (0, 0), 0.0)
             for (x1,y1) in self.moved[id][x][y]:
-                for (x2,y2) in self.Disadvantage[id]:
-                    tmp=self.path_length[x1][y1][x][y]*self.L[x][y]-self.path_length[x1][y1][x2][y2]*self.L[x2][y2]
-                    if tmp<minn:
-                        minn=tmp
-                        added=((x,y),id,(x1,y1),(x2,y2),tmp)
+                if self.L[x1][y1]>0:
+                    for (x2,y2) in self.Disadvantage[id]:
+                        tmp=self.path_length[x1][y1][x][y]*self.L[x][y]-self.path_length[x1][y1][x2][y2]*self.L[x2][y2]
+                        if tmp<minn:
+                            minn=tmp
+                            added=((x,y),id,(x1,y1),(x2,y2),tmp)
             self.cmp_advantage.append(added)
         self.cmp_advantage.sort(key=cm)
     def change(self):
-        num=0
         changed1=True
         while changed1:
             changed1=False
-            num+=1
-            print("change 轮数：",num)
             for ((x,y),id,(x1,y1),(x2,y2),tmp) in self.cmp_advantage:
-                if len(self.Disadvantage[id])>0:
+                if (self.Dis[x][y]<0.02):
+                    continue
+                elif len(self.Disadvantage[id])>0:
                     if self.L[x1][y1]*self.path_length[x1][y1][x][y]<self.Dis[x][y]-0.01:
                         self.move[x1][y1].clear()
                         self.move[x1][y1].append((x2,y2,self.L[x1][y1]))
