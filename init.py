@@ -91,16 +91,14 @@ class Bend:
                 max_profit = 0.0
                 mx = 0
                 my = 0
-                for k in self.In_border[id]:
-                    (x, y) = k
+                for (x,y) in self.In_border[id]:
                     if self.path_length[i][j][x][y] * self.L[x][y] > max_profit:
                         max_profit = self.path_length[i][j][x][y] * self.L[x][y]
                         mx = x
                         my = y
                 allocate[id][mx][my] += self.path_length[i][j][mx][my] * self.L[i][j]
                 max_profit = 0.0
-                for k in self.Out_border[id]:
-                    (x, y) = k
+                for (x,y) in self.Out_border[id]:
                     if self.path_length[i][j][x][y] * self.L[x][y] > max_profit:
                         max_profit = self.path_length[i][j][x][y] * self.L[x][y]
                         mx = x
@@ -146,7 +144,7 @@ class Bend:
                     self.Advantage[x][y]=id
                 elif max2<self.K[id][x][y]:
                     max2=self.K[id][x][y]
-            self.Dis[x][y]=max2-max1
+            self.Dis[x][y]=max1-max2
             for id in self.War_re[x][y]:
                 if id!=self.Advantage[x][y]:
                     self.Disadvantage[id].append((x,y))
@@ -160,30 +158,42 @@ class Bend:
                 if self.L[x1][y1]>0:
                     for (x2,y2) in self.Disadvantage[id]:
                         tmp=self.path_length[x1][y1][x][y]*self.L[x][y]-self.path_length[x1][y1][x2][y2]*self.L[x2][y2]
+                        #到底这玩意要不要大于0
                         if tmp<minn:
                             minn=tmp
                             added=((x,y),id,(x1,y1),(x2,y2),tmp)
-            self.cmp_advantage.append(added)
+            if minn!=1e9+0.1:
+                self.cmp_advantage.append(added)
         self.cmp_advantage.sort(key=cm)
     def change(self):
         changed1=True
+        num=0
         while changed1:
             changed1=False
+            num+=1
+            print("第",num,"次change1")
             for ((x,y),id,(x1,y1),(x2,y2),tmp) in self.cmp_advantage:
                 if (self.Dis[x][y]<0.02):
                     continue
                 elif len(self.Disadvantage[id])>0:
-                    if self.L[x1][y1]*self.path_length[x1][y1][x][y]<self.Dis[x][y]-0.01:
-                        self.move[x1][y1].clear()
-                        self.move[x1][y1].append((x2,y2,self.L[x1][y1]))
-                        print(7777777)
+                    ind=-1
+                    lap=0.0
+                    for i in range(len(self.move[x1][y1])):
+                        (xx,yy,lap)=self.move[x1][y1][i]
+                        if xx==x and yy==y:
+                            ind=i
+                            break
+                    if lap*self.path_length[x1][y1][x][y]<self.Dis[x][y]-0.01:
+                        self.move[x1][y1].pop(ind)
+                        self.move[x1][y1].append((x2,y2,lap))
+                        #print(7777777)
                     else:
                         for (p,q,wwww) in self.alloc_order[x1][y1]:
                             if p!=x or q!=y:
-                                self.move[x1][y1].clear()
+                                self.move[x1][y1].pop(ind)
                                 self.move[x1][y1].append((x,y,(self.Dis[x][y]-0.01)/self.path_length[x1][y1][x][y]))
-                                self.move[x1][y1].append((p, q, self.L[x1][y1]-(self.Dis[x][y] - 0.01) / self.path_length[x1][y1][x][y]))
-                        print(6666666," ",x1," ",y1)
+                                self.move[x1][y1].append((p, q, lap-(self.Dis[x][y] - 0.01) / self.path_length[x1][y1][x][y]))
+                        #print(6666666," ",x1," ",y1)
                     self.init_allocate()
                     self.init_cmp_advantage()
                     changed1=True
@@ -220,17 +230,16 @@ class Bend:
             self.move=[[[] for i in range(self.n)] for i in range(self.m)]
             for i in range(self.m):
                 for j in range(self.n):
-                    id = self.ID[i][j]
                     max_profit = 0.0
-                    mx = 0
+                    mx = -1
                     my = 0
                     for (x, y, profit) in self.alloc_order[i][j]:
                         if profit > max_profit:
                             mx = x
                             my = y
                             max_profit = profit
-                    self.move[i][j].append((mx,my,self.L[i][j]))
-
+                    if mx!=-1:
+                        self.move[i][j].append((mx,my,self.L[i][j]))
             self.init_allocate()
             self.init_cmp_advantage()
             print ("start")
