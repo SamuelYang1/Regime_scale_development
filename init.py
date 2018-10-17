@@ -1,24 +1,11 @@
 import math
 import networkx as nx
-import copy
-def cm(a,b):
+def cm(a):
     ((x, y), id, (x1, y1), (x2, y2), tmp1)=a
-    ((x, y), id, (x1, y1), (x2, y2), tmp2)=b
-    if tmp1<tmp2:
-        return -1
-    elif tmp1==tmp2:
-        return 0
-    else:
-        return 1
-def cm3(a,b):
+    return tmp1
+def cm3(a):
     (x,y, tmp1) = a
-    (x,y, tmp2) = b
-    if tmp1 < tmp2:
-        return -1
-    elif tmp1 == tmp2:
-        return 0
-    else:
-        return 1
+    return tmp1
 class Bend:
     def __init__(self):
         #读入数据规模
@@ -176,32 +163,44 @@ class Bend:
                         minn=tmp
                         added=((x,y),id,(x1,y1),(x2,y2),tmp)
             self.cmp_advantage.append(added)
-        self.cmp_advantage.sort(cm)
+        self.cmp_advantage.sort(key=cm)
     def change(self):
-        for ((x,y),id,(x1,y1),(x2,y2),tmp) in self.cmp_advantage:
-            if len(self.Disadvantage[id])>0:
-                if self.L[x1][y1]*self.path_length[x1][y1][x][y]<self.Dis[x][y]-0.01:
-                    self.move[x1][y1].clear()
-                    self.move[x1][y1].append((x2,y2,self.L[x1][y1]))
-                    #asdaf
-                else:
-                    for (p,q,wwww) in self.alloc_order[x1][y1]:
-                        if p!=x or q!=y:
-                            self.move[x1][y1].clear()
-                            self.move[x1][y1].append((x,y,(self.Dis[x][y]-0.01)/self.path_length[x1][y1][x][y]))
-                            self.move[x1][y1].append((p, q, self.L[x1][y1]-(self.Dis[x][y] - 0.01) / self.path_length[x1][y1][x][y]))
-                            break
-                self.init_allocate()
-                self.init_cmp_advantage()
-
-
+        num=0
+        changed1=True
+        while changed1:
+            changed1=False
+            num+=1
+            print("change 轮数：",num)
+            for ((x,y),id,(x1,y1),(x2,y2),tmp) in self.cmp_advantage:
+                if len(self.Disadvantage[id])>0:
+                    if self.L[x1][y1]*self.path_length[x1][y1][x][y]<self.Dis[x][y]-0.01:
+                        self.move[x1][y1].clear()
+                        self.move[x1][y1].append((x2,y2,self.L[x1][y1]))
+                        print(7777777)
+                    else:
+                        for (p,q,wwww) in self.alloc_order[x1][y1]:
+                            if p!=x or q!=y:
+                                self.move[x1][y1].clear()
+                                self.move[x1][y1].append((x,y,(self.Dis[x][y]-0.01)/self.path_length[x1][y1][x][y]))
+                                self.move[x1][y1].append((p, q, self.L[x1][y1]-(self.Dis[x][y] - 0.01) / self.path_length[x1][y1][x][y]))
+                        print(6666666," ",x1," ",y1)
+                    self.init_allocate()
+                    self.init_cmp_advantage()
+                    changed1=True
+                    break
+        changed1=False
+        for (x,y) in self.War:
+            if self.ID[x][y]!=self.Advantage[x][y]:
+                self.ID[x][y]=self.Advantage[x][y]
+                changed1=True
+        return changed1
     def evolution(self):
         changed=True
         num=0
         while changed:
             self.init_boder()
-            num+=1
             print("第",num,"轮演化")
+            num += 1
             s="output/result"+str(num)+".txt"
             with open(s,"w+") as op:
                 for i in range(self.m):
@@ -216,7 +215,7 @@ class Bend:
                     id = self.ID[i][j]
                     for (x,y) in self.War_border[id]:
                         self.alloc_order[i][j].append((x,y,self.path_length[i][j][x][y]*self.L[x][y]))
-                    self.alloc_order[i][j].sort(cmp=cm3,reverse=True)
+                    self.alloc_order[i][j].sort(key=cm3,reverse=True)
             #初始分配
             self.move=[[[] for i in range(self.n)] for i in range(self.m)]
             for i in range(self.m):
@@ -234,4 +233,5 @@ class Bend:
 
             self.init_allocate()
             self.init_cmp_advantage()
-            self.change()
+            print ("start")
+            changed=self.change()
