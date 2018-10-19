@@ -174,8 +174,8 @@ class Bend:
         while changed1:
             changed1=False
             num+=1
-            #if len(self.cmp_advantage)>0:
-               # print("第",num,"次分配，优势表长：",len(self.cmp_advantage),"，第一值大小：",self.cmp_advantage[0])
+            if len(self.cmp_advantage)>0:
+                print("第",num,"次分配，优势表长：",len(self.cmp_advantage),"，第一个值：",self.cmp_advantage[0])
             for ((x,y),id,(x1,y1),(x2,y2),tmp) in self.cmp_advantage:
                 if (self.Dis[x][y]<0.02):
                     continue
