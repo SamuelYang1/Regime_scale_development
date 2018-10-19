@@ -166,7 +166,10 @@ class Bend:
                 self.cmp_advantage.append(added)
         self.cmp_advantage.sort(key=cm)
     def change(self):
+        Out_Disadvantage=[[]for i in range(self.r)]
+        In_Disadvantage=[[]for i in range(self.r)]
         changed1=True
+        done=False
         num=0
         while changed1:
             changed1=False
@@ -198,6 +201,42 @@ class Bend:
                     self.init_cmp_advantage()
                     changed1=True
                     break
+            if (not done) and (not changed1):
+                for i in range(self.r):
+                    for (x,y) in self.Disadvantage[i]:
+                        if i!=self.ID[x][y]:
+                            Out_Disadvantage[i].append((x,y))
+                        else:
+                            In_Disadvantage[i].append((x,y))
+                for x in range(self.m):
+                    for y in range(self.n):
+                        i=self.ID[x][y]
+                        if len(In_Disadvantage[i])>0 and len(Out_Disadvantage[i])>0:
+                            #先找(x,y)的边际效益最优的栅格
+                            mx=-1
+                            my=-1
+                            max_profit=0.0
+                            for (xx,yy) in self.War:
+                                if self.War_re[xx][yy].count(i)>0:
+                                    tmp=self.path_length[x][y][xx][yy]*self.L[xx][yy]
+                                    if tmp>max_profit:
+                                        max_profit=tmp
+                                        mx=xx
+                                        my=yy
+                            #再删除(x,y)分配表move中的劣势栅格
+                            ind=0
+                            sum=0.0
+                            while ind<len(self.move[x][y]):
+                                (xx,yy,ll)=self.move[x][y][ind]
+                                if Out_Disadvantage[i].count((xx,yy))>0:
+                                    sum+=ll
+                                    self.move[x][y].pop(ind)
+                                ind+=1
+                            self.move[x][y].append((mx,my,sum))
+                self.init_allocate()
+                self.init_cmp_advantage()
+                done=True
+                changed1=True
         changed1=False
         for (x,y) in self.War:
             if self.ID[x][y]!=self.Advantage[x][y]:
