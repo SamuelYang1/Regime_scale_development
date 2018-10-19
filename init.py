@@ -174,7 +174,8 @@ class Bend:
         while changed1:
             changed1=False
             num+=1
-            print("第",num,"次分配")
+            #if len(self.cmp_advantage)>0:
+               # print("第",num,"次分配，优势表长：",len(self.cmp_advantage),"，第一值大小：",self.cmp_advantage[0])
             for ((x,y),id,(x1,y1),(x2,y2),tmp) in self.cmp_advantage:
                 if (self.Dis[x][y]<0.02):
                     continue
@@ -189,14 +190,12 @@ class Bend:
                     if lap*self.path_length[x1][y1][x][y]<self.Dis[x][y]-0.01:
                         self.move[x1][y1].pop(ind)
                         self.move[x1][y1].append((x2,y2,lap))
-                        #print(7777777)
                     else:
                         for (p,q,wwww) in self.alloc_order[x1][y1]:
                             if p!=x or q!=y:
                                 self.move[x1][y1].pop(ind)
                                 self.move[x1][y1].append((x,y,(self.Dis[x][y]-0.01)/self.path_length[x1][y1][x][y]))
                                 self.move[x1][y1].append((p, q, lap-(self.Dis[x][y] - 0.01) / self.path_length[x1][y1][x][y]))
-                        #print(6666666," ",x1," ",y1)
                     self.init_allocate()
                     self.init_cmp_advantage()
                     changed1=True
@@ -217,7 +216,7 @@ class Bend:
                             my=-1
                             max_profit=0.0
                             for (xx,yy) in self.War:
-                                if self.War_re[xx][yy].count(i)>0:
+                                if self.War_re[xx][yy].count(i)>0 and Out_Disadvantage[i].count((xx,yy))==0:
                                     tmp=self.path_length[x][y][xx][yy]*self.L[xx][yy]
                                     if tmp>max_profit:
                                         max_profit=tmp
