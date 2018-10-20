@@ -159,7 +159,7 @@ class Bend:
                     for (x2,y2) in self.Disadvantage[id]:
                         tmp=self.path_length[x1][y1][x][y]*self.L[x][y]-self.path_length[x1][y1][x2][y2]*self.L[x2][y2]
                         #到底这玩意要不要大于0
-                        if tmp<minn and tmp>=0:
+                        if tmp<minn and tmp>0:
                             minn=tmp
                             added=((x,y),id,(x1,y1),(x2,y2),tmp)
             if minn!=1e9+0.1:
@@ -205,8 +205,10 @@ class Bend:
                         self.move[x1][y1].pop(ind)
                         self.move[x1][y1].append((x2, y2, lap))
                     else:
-                        for (p,q,wwww) in self.alloc_order[x1][y1]:
-                            if p!=x or q!=y:
+                        for ip in range(len(self.alloc_order[x1][y1])):
+                            (p,q,wwww)=self.alloc_order[x1][y1][ip]
+                            if p==x and q==y:
+                                (p, q, wwww) = self.alloc_order[x1][y1][ip+1]
                                 self.move[x1][y1].pop(ind)
                                 self.move[x1][y1].append((x,y,(self.Dis[x][y]-0.01)/self.path_length[x1][y1][x][y]))
                                 self.move[x1][y1].append((p, q, lap-(self.Dis[x][y] - 0.01) / self.path_length[x1][y1][x][y]))
