@@ -165,6 +165,20 @@ class Bend:
             if minn!=1e9+0.1:
                 self.cmp_advantage.append(added)
         self.cmp_advantage.sort(key=cm)
+    def pure(self,x,y):
+        i=0
+        while i<len(self.move[x][y])-1:
+            (xi,yi,tmpi)=self.move[x][y][i]
+            j=i+1
+            while j<len(self.move[x][y]):
+                (xj,yj,tmpj)=self.move[x][y][j]
+                if xi==xj and yi==yj:
+                    tmpi+=tmpj
+                    self.move[x][y].pop(j)
+                else:
+                    j+=1
+            self.move[x][y][i]=(xi,yi,tmpi)
+            i+=1
     def change(self):
         Out_Disadvantage=[[]for i in range(self.r)]
         In_Disadvantage=[[]for i in range(self.r)]
@@ -189,13 +203,15 @@ class Bend:
                             break
                     if lap*self.path_length[x1][y1][x][y]<self.Dis[x][y]-0.01:
                         self.move[x1][y1].pop(ind)
-                        self.move[x1][y1].append((x2,y2,lap))
+                        self.move[x1][y1].append((x2, y2, lap))
                     else:
                         for (p,q,wwww) in self.alloc_order[x1][y1]:
                             if p!=x or q!=y:
                                 self.move[x1][y1].pop(ind)
                                 self.move[x1][y1].append((x,y,(self.Dis[x][y]-0.01)/self.path_length[x1][y1][x][y]))
                                 self.move[x1][y1].append((p, q, lap-(self.Dis[x][y] - 0.01) / self.path_length[x1][y1][x][y]))
+                                break
+                    self.pure(x1,y1)
                     self.init_allocate()
                     self.init_cmp_advantage()
                     changed1=True
@@ -232,6 +248,7 @@ class Bend:
                                     self.move[x][y].pop(ind)
                                 ind+=1
                             self.move[x][y].append((mx,my,sum))
+                            self.pure(x,y)
                 self.init_allocate()
                 self.init_cmp_advantage()
                 done=True
