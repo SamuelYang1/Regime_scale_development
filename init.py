@@ -301,3 +301,143 @@ class Bend:
             self.init_cmp_advantage()
             print ("start")
             changed=self.change()
+    ####
+    def init_harassment(self):
+        self.M = [[0.0 for i in range(self.n)] for i in range(self.m)]
+        self.X = [[0.0 for i in range(self.n)] for i in range(self.m)]
+        with open('army.txt')as ar, open('labor_x.txt')as lx:
+            for i in range(self.m):
+                s_ar = ar.readline().split('\t')
+                s_lx = lx.readline().split('\t')
+                for j in range(self.n):
+                    self.M[i][j] = float(s_ar[j])
+                    self.X[i][j] = float(s_lx[j])
+    def cal_harassment(self):
+        self.harassment=[[[]for i in range(self.n)]for i in range(self.m)]
+        self.P=[[[[0.0 for i in range(self.n)] for i in range(self.m)] for i in range(self.n)] for i in range(self.m)]
+        self.cell=[[]for i in range(self.r)]
+        for ai in range(self.m):
+            for aj in range(self.n):
+                id=self.ID[ai][aj]
+                self.cell[id].append((ai,aj))
+                for bi in range(self.m):
+                    for bj in range(self.n):
+                        if self.ID[ai][aj]!=self.ID[bi][bj] and self.L[bi][bj]!=0:
+                            if self.M[bi][bj]!=0:
+                                tmp=self.path_length[ai][aj][bi][bj]*self.X[bi][bj]/self.M[bi][bj]
+                            else:
+                                tmp=1e9
+                            self.P[ai][aj][bi][bj]=tmp
+                            self.harassment[ai][aj].append((bi,bj,tmp))
+                self.harassment[ai][aj].sort(key=cm3,reverse=True)
+    def init_harassment_rec(self):
+        self.harassment_rec = [[[] for i in range(self.n)] for i in range(self.m)]
+        for x in range(self.m):
+            for y in range(self.n):
+                for (a,b,c) in self.harassment_send[x][y]:
+                    self.harassment_rec[a][b].append((x,y,c))
+    def harass(self):
+        self.harassment_send=[[[]for i in range(self.n)]for i in range(self.m)]
+        for i in range(self.m):
+            for j in range(self.n):
+                self.harassment_send[i][j].append((-1,-1,self.M[i][j]))
+        for id in range(self.r):
+            print("id=",id)
+            self.diff = [[[] for i in range(self.n)] for i in range(self.m)]
+            for (x,y) in self.cell[id]:
+                i=0
+                sum=0.0
+                while i<len(self.harassment_send[x][y]):
+                    (xx,yy,zz)=self.harassment_send[x][y][i]
+                    if xx==-1 and yy==-1:
+                        self.harassment_send[x][y].pop(i)
+                        sum+=zz
+                    else:
+                        i+=1
+                (bx,by,bz)=self.harassment[x][y][0]
+                self.harassment_send[x][y].append((bx,by,sum))
+                self.init_harassment_rec()
+            ck=False
+            while not ck:
+                #4.2
+                for bx in range(self.m):
+                    for by in range(self.n):
+                        for (ax,ay,az) in self.harassment_rec[bx][by]:
+                            self.diff[bx][by].append((ax,ay,self.P[ax][ay][bx][by]))
+                        self.diff[bx][by].sort(key=cm3,reverse=True)
+                #4.3
+                for bx in range(self.m):
+                    for by in range(self.n):
+                        if self.ID[x][y]!=self.ID[bx][by]:
+                            summ = 0.0
+                            for (ax,ay,az) in self.harassment_rec[bx][by]:
+                                summ+=az*self.path_length[ax][ay][bx][by]
+                            if summ<=self.M[bx][by]:
+                                continue
+                            else:
+                                temp=self.M[bx][by]
+                                (a1x,a1y,a1z)=self.diff[bx][by][0]
+                                (a2x,a2y,a2z)=self.diff[bx][by][1]
+                                num=-1
+                                for (xx,yy,zz) in self.harassment_rec[bx][by]:
+                                    if xx==a1x and yy==a1y:
+                                        temp-=zz*self.path_length[a1x][a1y][bx][by]
+                                        num=0
+                                        break
+                                step=-1.0
+                                for (xx,yy,zz) in self.harassment_rec[bx][by]:
+                                    if xx==a2x and yy==a2y:
+                                        step=zz
+                                        break
+                                while temp>0:
+                                    temp-=step*self.path_length[a2x][a2y][bx][by]
+                                    num=1
+                                if temp<0:
+                                    (ax,ay,az)=self.diff[bx][by][num]
+                                    for ind in range(len(self.harassment_send[ax][ay])):
+                                        (xx, yy, zz)=self.harassment_send[ax][ay][ind]
+                                        if xx==bx and yy==by:
+                                            zz+=temp/self.path_length[ax][ay][bx][by]
+                                            self.harassment_send[ax][ay][ind]=(xx,yy,zz)
+                                            (xx, yy, zz)=self.harassment[ax][ay][0]
+                                            if xx==bx and yy==by:
+                                                self.harassment[ax][ay].pop(0)
+                                            self.harassment_send[ax][ay].append((-1,-1,-temp/self.path_length[ax][ay][bx][by]))
+                                            break
+                                elif temp==0:
+                                    num+=1
+                                    while num<len(self.diff[bx][by]):
+                                        (ax, ay, az) = self.diff[bx][by][num]
+                                        (xx, yy, zz) = self.harassment[ax][ay][0]
+                                        if xx == bx and yy == by:
+                                            self.harassment[ax][ay].pop(0)
+                                        for ind in range(len(self.harassment_send[ax][ay])):
+                                            (xx, yy, zz) = self.harassment_send[ax][ay][ind]
+                                            if xx == bx and yy == by:
+                                                self.harassment_send[ax][ay].pop(ind)
+                                                self.harassment_send[ax][ay].append((-1, -1,zz))
+                                                break
+                                        num+=1
+                                self.init_harassment_rec()
+                #4.10
+                ck=True
+                for bx in range(self.m):
+                    for by in range(self.n):
+                        sum=0.0
+                        for (xx,yy,zz) in self.harassment_rec[bx][by]:
+                            sum+=zz
+                        if sum>self.M[bx][by]:
+                            ck=False
+                            break
+                    if not ck:
+                        break
+    def last_work(self):
+        self.gain=[[0.0 for i in range(self.r)]for i in range(self.r)]
+        for i in range(self.m):
+            for j in range(self.n):
+                ida=self.ID[i][j]
+                for (x,y,z) in self.harassment_send[i][j]:
+                    idb=self.ID[x][y]
+                    tmp=z/self.M[x][y]*self.path_length[i][j][x][y]*self.X[x][y]
+                    self.gain[ida][idb]+=tmp
+                    self.gain[idb][ida]-=tmp
