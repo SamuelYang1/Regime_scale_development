@@ -158,7 +158,6 @@ class Bend:
                 if self.L[x1][y1]>0:
                     for (x2,y2) in self.Disadvantage[id]:
                         tmp=self.path_length[x1][y1][x][y]*self.L[x][y]-self.path_length[x1][y1][x2][y2]*self.L[x2][y2]
-                        #到底这玩意要不要大于0
                         if tmp<minn and tmp>0:
                             minn=tmp
                             added=((x,y),id,(x1,y1),(x2,y2),tmp)
