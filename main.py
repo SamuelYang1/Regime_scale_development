@@ -11,7 +11,8 @@ bend.init_harassment()
 bend.cal_harassment()
 bend.harass()
 bend.last_work()
-for i in range(bend.r):
-    for j in range(bend.r):
-        print(bend.gain[i][j]," ",end="")
-    print()
+with open("hresult.txt","w+") as op:
+    for i in range(bend.r):
+        for j in range(bend.r):
+            op.write(str(bend.gain[i][j])+'\t')
+        op.write('\n')
