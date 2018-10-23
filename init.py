@@ -214,8 +214,7 @@ class Bend:
                                 break
                     self.pure(x1,y1)
                     num += 1
-                    print("第", num, "次分配: from(", x1, ",", y1, ") to ", end="")
-                    print(self.move[x1][y1])
+                    print("第", num, "次分配: from(", x1, ",", y1, ") to ",self.move[x1][y1])
                     self.init_allocate()
                     self.init_cmp_advantage()
                     changed1=True
