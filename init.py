@@ -157,10 +157,11 @@ class Bend:
             for (x1,y1) in self.moved[id][x][y]:
                 if self.L[x1][y1]>0:
                     for (x2,y2) in self.Disadvantage[id]:
-                        tmp=self.path_length[x1][y1][x][y]*self.L[x][y]-self.path_length[x1][y1][x2][y2]*self.L[x2][y2]
-                        if tmp<minn and tmp>0:
-                            minn=tmp
-                            added=((x,y),id,(x1,y1),(x2,y2),tmp)
+                        if self.Out_Disadvantage[id].count((x2,y2))==0:
+                            tmp=self.path_length[x1][y1][x][y]*self.L[x][y]-self.path_length[x1][y1][x2][y2]*self.L[x2][y2]
+                            if tmp<minn and tmp>0:
+                                minn=tmp
+                                added=((x,y),id,(x1,y1),(x2,y2),tmp)
             if minn!=1e9+0.1:
                 self.cmp_advantage.append(added)
         self.cmp_advantage.sort(key=cm)
@@ -179,8 +180,6 @@ class Bend:
             self.move[x][y][i]=(xi,yi,tmpi)
             i+=1
     def change(self):
-        Out_Disadvantage=[[]for i in range(self.r)]
-        In_Disadvantage=[[]for i in range(self.r)]
         changed1=True
         done=False
         num=0
@@ -221,19 +220,19 @@ class Bend:
                 for i in range(self.r):
                     for (x,y) in self.Disadvantage[i]:
                         if i!=self.ID[x][y]:
-                            Out_Disadvantage[i].append((x,y))
+                            self.Out_Disadvantage[i].append((x,y))
                         else:
-                            In_Disadvantage[i].append((x,y))
+                            self.In_Disadvantage[i].append((x,y))
                 for x in range(self.m):
                     for y in range(self.n):
                         i=self.ID[x][y]
-                        if len(In_Disadvantage[i])>0 and len(Out_Disadvantage[i])>0:
+                        if len(self.In_Disadvantage[i])>0 and len(self.Out_Disadvantage[i])>0:
                             #先找(x,y)的边际效益最优的栅格
                             mx=-1
                             my=-1
                             max_profit=0.0
                             for (xx,yy) in self.War:
-                                if self.War_re[xx][yy].count(i)>0 and Out_Disadvantage[i].count((xx,yy))==0:
+                                if self.War_re[xx][yy].count(i)>0 and self.Out_Disadvantage[i].count((xx,yy))==0:
                                     tmp=self.path_length[x][y][xx][yy]*self.L[xx][yy]
                                     if tmp>max_profit:
                                         max_profit=tmp
@@ -244,7 +243,7 @@ class Bend:
                             sum=0.0
                             while ind<len(self.move[x][y]):
                                 (xx,yy,ll)=self.move[x][y][ind]
-                                if Out_Disadvantage[i].count((xx,yy))>0:
+                                if self.Out_Disadvantage[i].count((xx,yy))>0:
                                     sum+=ll
                                     self.move[x][y].pop(ind)
                                 ind+=1
@@ -296,6 +295,8 @@ class Bend:
                             max_profit = profit
                     if mx!=-1:
                         self.move[i][j].append((mx,my,self.L[i][j]))
+            self.Out_Disadvantage = [[] for i in range(self.r)]
+            self.In_Disadvantage = [[] for i in range(self.r)]
             self.init_allocate()
             self.init_cmp_advantage()
             print ("start")
