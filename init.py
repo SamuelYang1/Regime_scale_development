@@ -155,11 +155,14 @@ class Bend:
             minn=1e9+0.1
             added = ((0, 0), 0, (0, 0), (0, 0), 0.0)
             for (x1,y1) in self.moved[id][x][y]:
+                (p, q, wwww) = self.alloc_order[x1][y1][len(self.alloc_order[x1][y1])-1]
+                if p==x and q==y:
+                    continue
                 if self.L[x1][y1]>0:
                     for (x2,y2) in self.Disadvantage[id]:
                         if self.Out_Disadvantage[id].count((x2,y2))==0:
                             tmp=self.path_length[x1][y1][x][y]*self.L[x][y]-self.path_length[x1][y1][x2][y2]*self.L[x2][y2]
-                            if tmp<minn and tmp>0:
+                            if tmp<minn:
                                 minn=tmp
                                 added=((x,y),id,(x1,y1),(x2,y2),tmp)
             if minn!=1e9+0.1:
