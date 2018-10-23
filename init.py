@@ -185,9 +185,8 @@ class Bend:
         num=0
         while changed1:
             changed1=False
-            num+=1
-            if len(self.cmp_advantage)>0:
-                print("第",num,"次分配，优势表长：",len(self.cmp_advantage),"，第一个值：",self.cmp_advantage[0])
+            #if len(self.cmp_advantage)>0:
+                #print("第",num,"次分配，优势表长：",len(self.cmp_advantage),"，第一个值：",self.cmp_advantage[0])
             for ((x,y),id,(x1,y1),(x2,y2),tmp) in self.cmp_advantage:
                 if (self.Dis[x][y]<0.02):
                     continue
@@ -202,21 +201,27 @@ class Bend:
                     if lap*self.path_length[x1][y1][x][y]<self.Dis[x][y]-0.01:
                         self.move[x1][y1].pop(ind)
                         self.move[x1][y1].append((x2, y2, lap))
+                        #print("(",x,",",y,")->","(",x2,",",y2,"):",lap)
                     else:
                         for ip in range(len(self.alloc_order[x1][y1])):
                             (p,q,wwww)=self.alloc_order[x1][y1][ip]
                             if p==x and q==y:
                                 (p, q, wwww) = self.alloc_order[x1][y1][ip+1]
                                 self.move[x1][y1].pop(ind)
-                                self.move[x1][y1].append((x,y,(self.Dis[x][y]-0.01)/self.path_length[x1][y1][x][y]))
-                                self.move[x1][y1].append((p, q, lap-(self.Dis[x][y] - 0.01) / self.path_length[x1][y1][x][y]))
+                                self.move[x1][y1].append((p,q,(self.Dis[x][y]-0.01)/self.path_length[x1][y1][x][y]))
+                                self.move[x1][y1].append((x, y, lap-(self.Dis[x][y] - 0.01) / self.path_length[x1][y1][x][y]))
+                                #print("(", x, ",", y, ")->", "(", p, ",", q, "):", lap-(self.Dis[x][y] - 0.01) / self.path_length[x1][y1][x][y])
                                 break
                     self.pure(x1,y1)
+                    num += 1
+                    print("第", num, "次分配: from(", x1, ",", y1, ") to ", end="")
+                    print(self.move[x1][y1])
                     self.init_allocate()
                     self.init_cmp_advantage()
                     changed1=True
                     break
             if (not done) and (not changed1):
+                print("红色警戒！！！！！！！！")
                 for i in range(self.r):
                     for (x,y) in self.Disadvantage[i]:
                         if i!=self.ID[x][y]:
