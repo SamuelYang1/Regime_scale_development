@@ -1,5 +1,4 @@
 # Regime_scale_development
-一只弯曲而已\
 init.py变量解释：\
 War_border[id]=[(x,y)] 政权id的战争带坐标\
 War=[(x,y)] 所有战争带坐标\
@@ -12,4 +11,4 @@ War_re[x][y]=[id] 交战带(x,y)的相关交战国\
 Disadvantage[id]=[(x,y)] 劣势表\
 cmp_advantage 比较优势表
 
-
+—————— 一只弯曲而已

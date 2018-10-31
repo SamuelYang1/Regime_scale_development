@@ -14,7 +14,6 @@ class Bend:
             self.m = int(p[0])
             self.n = int(p[1])
             self.r=int(p[2])
-
         #读入劳动力资源，交通成本和政权
         self.L = [[0.0 for i in range(self.n)] for i in range(self.m)]
         self.T = [[0.0 for i in range(self.n)] for i in range(self.m)]
@@ -28,70 +27,56 @@ class Bend:
                     self.L[i][j] = float(s_lb[j])
                     self.T[i][j] = int(s_ty[j])
                     self.ID[i][j] = int(s_rg[j])
+        self.noexrg=[True for i in range(self.r)]
+        with open("noexrg.txt") as no:
+            s_no=no.readline().split('\t')
+            for st in s_no:
+                i=int(st)
+                self.noexrg[i]=False
     def init_boder(self):
-        # 初始化边缘带表
-        self.Out_border = [[] for i in range(self.r)]
         self.In_border = [[] for i in range(self.r)]
+        Mid=[[[]for i in range(self.r)]for i in range(self.r)]
         for i in range(self.m):
             for j in range(self.n):
                 Is_in_border = False
                 if i - 1 >= 0 and self.ID[i - 1][j] != self.ID[i][j]:
                     Is_in_border = True
-                    if self.Out_border[self.ID[i - 1][j]].count((i, j)) == 0:
-                        self.Out_border[self.ID[i - 1][j]].append((i, j))
+                    if Mid[self.ID[i][j]][self.ID[i - 1][j]].count((i, j)) == 0:
+                        Mid[self.ID[i][j]][self.ID[i - 1][j]].append((i, j))
                 if j - 1 >= 0 and self.ID[i][j - 1] != self.ID[i][j]:
                     Is_in_border = True
-                    if self.Out_border[self.ID[i][j - 1]].count((i, j)) == 0:
-                        self.Out_border[self.ID[i][j - 1]].append((i, j))
+                    if Mid[self.ID[i][j]][self.ID[i][j-1]].count((i, j)) == 0:
+                        Mid[self.ID[i][j]][self.ID[i][j-1]].append((i, j))
                 if i + 1 < self.m and self.ID[i + 1][j] != self.ID[i][j]:
                     Is_in_border = True
-                    if self.Out_border[self.ID[i + 1][j]].count((i, j)) == 0:
-                        self.Out_border[self.ID[i + 1][j]].append((i, j))
+                    if Mid[self.ID[i][j]][self.ID[i + 1][j]].count((i, j)) == 0:
+                        Mid[self.ID[i][j]][self.ID[i + 1][j]].append((i, j))
                 if j + 1 < self.n and self.ID[i][j + 1] != self.ID[i][j]:
                     Is_in_border = True
-                    if self.Out_border[self.ID[i][j + 1]].count((i, j)) == 0:
-                        self.Out_border[self.ID[i][j + 1]].append((i, j))
+                    if Mid[self.ID[i][j]][self.ID[i][j+1]].count((i, j)) == 0:
+                        Mid[self.ID[i][j]][self.ID[i][j+1]].append((i, j))
                 if Is_in_border:
                     self.In_border[self.ID[i][j]].append ((i, j))
+        self.Out_border = [[] for i in range(self.r)]
+        real_id=[]
+        for id in range(self.r):
+            if self.noexrg[id]:
+                real_id.append(id)
+        for id in range(self.r):
+            fake_id=[]
+            for xid in range(self.r):
+                if len(Mid[id][xid])>0:
+                    if not self.noexrg[xid]:
+                        fake_id.append(xid)
+            fake_id.append(id)
+            for r_id in real_id:
+                if r_id!=id:
+                    for f_id in fake_id:
+                        for k in Mid[r_id][f_id]:
+                            if self.Out_border[id].count(k)==0:
+                                self.Out_border[id].append(k)
+        print("!!!")
     def cal_mr(self):
-        # 边际收益
-        sq2=math.sqrt(2)
-        self.path_length = [[[[0.0 for i in range(self.n)] for i in range(self.m)] for i in range(self.n)] for i in range(self.m)]
-        Tr = [[0.0 for i in range(self.n)] for i in range(self.m)]
-        for i in range(self.m):
-            for j in range(self.n):
-                Tr[i][j]=-math.log(self.T[i][j])
-        G = nx.Graph()
-        for i in range(self.m):
-            for j in range(self.n):
-                if i-1>=0:
-                    G.add_edge((i,j),(i-1,j),weight=(Tr[i][j]+Tr[i-1][j])/2)
-                if j-1>=0:
-                    G.add_edge((i,j),(i,j-1),weight=(Tr[i][j]+Tr[i][j-1])/2)
-                    if i-1>=0:
-                        G.add_edge((i, j), (i - 1, j-1), weight=(Tr[i][j] + Tr[i - 1][j-1]) / 2*sq2)
-                    if i+1<self.m:
-                        G.add_edge((i, j), (i + 1, j - 1), weight=(Tr[i][j] + Tr[i + 1][j - 1]) / 2 * sq2)
-        print("cal_mr start")
-        p=dict(nx.shortest_path_length(G,weight="weight"))
-        for i in range(self.m):
-            for j in range(self.n):
-                a=(i,j)
-                for x in range(self.m):
-                    for y in range(self.n):
-                        b=(x,y)
-                        if i==x and j==y:
-                            self.path_length[i][j][x][y] = math.exp(-p[a][b])
-                        else:
-                            self.path_length[i][j][x][y]=math.exp(-p[a][b]+Tr[i][j]/2)
-        print(self.path_length[1][5][1][5])
-        with open("bbb.txt","w+") as aa:
-            for i in range(self.m):
-                for j in range(self.n):
-                    aa.write(str(self.path_length[1][5][i][j]) + '\t')
-                aa.write('\n')
-        print("cal_mr end")
-    def cal_mr_new(self):
         # 边际收益
         sq2=math.sqrt(2)
         self.path_length = [[[[0.0 for i in range(self.n)] for i in range(self.m)] for i in range(self.n)] for i in range(self.m)]
@@ -123,11 +108,6 @@ class Bend:
                             self.path_length[x][y][i][j] = math.exp(-p[a])
                         else:
                             self.path_length[x][y][i][j]=math.exp(-p[a]+Tr[x][y]/2)
-        with open("aaa.txt","w+") as aa:
-            for i in range(self.m):
-                for j in range(self.n):
-                    aa.write(str(self.path_length[1][5][i][j]) + '\t')
-                aa.write('\n')
         print("cal_mr_new end")
     def init_war_border(self):#交战带确定
         # 分配
