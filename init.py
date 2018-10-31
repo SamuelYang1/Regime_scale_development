@@ -19,14 +19,14 @@ class Bend:
         self.L = [[0.0 for i in range(self.n)] for i in range(self.m)]
         self.T = [[0.0 for i in range(self.n)] for i in range(self.m)]
         self.ID = [[0 for i in range(self.n)] for i in range(self.m)]
-        with open('labor.txt')as lb, open('transportation.txt')as tr, open('regime.txt')as rg:
+        with open('labor.txt')as lb, open('type.txt')as ty, open('regime.txt')as rg:
             for i in range(self.m):
                 s_lb = lb.readline().split('\t')
-                s_tr = tr.readline().split('\t')
+                s_ty = ty.readline().split('\t')
                 s_rg = rg.readline().split('\t')
                 for j in range(self.n):
                     self.L[i][j] = float(s_lb[j])
-                    self.T[i][j] = float(s_tr[j])
+                    self.T[i][j] = int(s_ty[j])
                     self.ID[i][j] = int(s_rg[j])
     def init_boder(self):
         # 初始化边缘带表
@@ -80,8 +80,55 @@ class Bend:
                 for x in range(self.m):
                     for y in range(self.n):
                         b=(x,y)
-                        self.path_length[i][j][x][y]=math.exp(-p[a][b]+Tr[i][j]/2)
+                        if i==x and j==y:
+                            self.path_length[i][j][x][y] = math.exp(-p[a][b])
+                        else:
+                            self.path_length[i][j][x][y]=math.exp(-p[a][b]+Tr[i][j]/2)
+        print(self.path_length[1][5][1][5])
+        with open("bbb.txt","w+") as aa:
+            for i in range(self.m):
+                for j in range(self.n):
+                    aa.write(str(self.path_length[1][5][i][j]) + '\t')
+                aa.write('\n')
         print("cal_mr end")
+    def cal_mr_new(self):
+        # 边际收益
+        sq2=math.sqrt(2)
+        self.path_length = [[[[0.0 for i in range(self.n)] for i in range(self.m)] for i in range(self.n)] for i in range(self.m)]
+        for x in range(self.m):
+            for y in range(self.n):
+                Tr = [[0.0 for i in range(self.n)] for i in range(self.m)]
+                s = "transportation" + str(self.T[x][y]) + ".txt"
+                with open(s) as tr:
+                    for i in range(self.m):
+                        s_tr = tr.readline().split('\t')
+                        for j in range(self.n):
+                            Tr[i][j] =-math.log(float(s_tr[j]))
+                G = nx.Graph()
+                for i in range(self.m):
+                    for j in range(self.n):
+                        if i-1>=0:
+                            G.add_edge((i,j),(i-1,j),weight=(Tr[i][j]+Tr[i-1][j])/2)
+                        if j-1>=0:
+                            G.add_edge((i,j),(i,j-1),weight=(Tr[i][j]+Tr[i][j-1])/2)
+                            if i-1>=0:
+                                G.add_edge((i, j), (i - 1, j-1), weight=(Tr[i][j] + Tr[i - 1][j-1]) / 2*sq2)
+                            if i+1<self.m:
+                                G.add_edge((i, j), (i + 1, j - 1), weight=(Tr[i][j] + Tr[i + 1][j - 1]) / 2 * sq2)
+                p=dict(nx.shortest_path_length(G,source=((x,y)),weight="weight"))
+                for i in range(self.m):
+                    for j in range(self.n):
+                        a=(i,j)
+                        if i==x and j==y:
+                            self.path_length[x][y][i][j] = math.exp(-p[a])
+                        else:
+                            self.path_length[x][y][i][j]=math.exp(-p[a]+Tr[x][y]/2)
+        with open("aaa.txt","w+") as aa:
+            for i in range(self.m):
+                for j in range(self.n):
+                    aa.write(str(self.path_length[1][5][i][j]) + '\t')
+                aa.write('\n')
+        print("cal_mr_new end")
     def init_war_border(self):#交战带确定
         # 分配
         allocate = [[[0.0 for i in range(self.n)] for i in range(self.m)] for i in range(self.r)]
