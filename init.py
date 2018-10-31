@@ -75,7 +75,6 @@ class Bend:
                         for k in Mid[r_id][f_id]:
                             if self.Out_border[id].count(k)==0:
                                 self.Out_border[id].append(k)
-        print("!!!")
     def cal_mr(self):
         # 边际收益
         sq2=math.sqrt(2)
