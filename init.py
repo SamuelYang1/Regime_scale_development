@@ -326,12 +326,13 @@ class Bend:
     def init_harassment(self):
         self.M = [[0.0 for i in range(self.n)] for i in range(self.m)]
         self.X = [[0.0 for i in range(self.n)] for i in range(self.m)]
-        with open('army.txt')as ar:
+        with open('army.txt')as ar, open('x.txt') as bendx:
             for i in range(self.m):
                 s_ar = ar.readline().split('\t')
+                s_bendx=bendx.readline().split('\t')
                 for j in range(self.n):
                     self.M[i][j] = float(s_ar[j])
-                    self.X[i][j] = self.L[i][j]-self.M[i][j]
+                    self.X[i][j] = float(s_bendx[j])
     def cal_harassment(self):
         self.harassment=[[[]for i in range(self.n)]for i in range(self.m)]
         self.P=[[[[0.0 for i in range(self.n)] for i in range(self.m)] for i in range(self.n)] for i in range(self.m)]
@@ -346,7 +347,7 @@ class Bend:
                             if self.M[bi][bj]!=0:
                                 tmp=self.path_length[ai][aj][bi][bj]*self.X[bi][bj]/self.M[bi][bj]
                             else:
-                                tmp=1e9
+                                tmp=0
                             self.P[ai][aj][bi][bj]=tmp
                             self.harassment[ai][aj].append((bi,bj,tmp))
                 self.harassment[ai][aj].sort(key=cm3,reverse=True)
@@ -361,24 +362,31 @@ class Bend:
         self.harassment_send=[[[]for i in range(self.n)]for i in range(self.m)]
         for i in range(self.m):
             for j in range(self.n):
-                self.harassment_send[i][j].append((-1,-1,self.M[i][j]))
+                if (self.M[i][j]>0):
+                    self.harassment_send[i][j].append((-1,-1,self.M[i][j]))
         for id in range(self.r):
             print("id=",id)
             for (x,y) in self.cell[id]:
                 i=0
                 sum=0.0
-                while i<len(self.harassment_send[x][y]):
-                    (xx,yy,zz)=self.harassment_send[x][y][i]
-                    if xx==-1 and yy==-1:
-                        self.harassment_send[x][y].pop(i)
-                        sum+=zz
-                    else:
-                        i+=1
-                (bx,by,bz)=self.harassment[x][y][0]
-                self.harassment_send[x][y].append((bx,by,sum))
+                if len(self.harassment_send[x][y])>0:
+                    while i<len(self.harassment_send[x][y]):
+                        (xx,yy,zz)=self.harassment_send[x][y][i]
+                        if xx==-1 and yy==-1:
+                            self.harassment_send[x][y].pop(i)
+                            sum+=zz
+                        else:
+                            i+=1
+                    (bx,by,bz)=self.harassment[x][y][0]
+                    self.harassment_send[x][y].append((bx,by,sum))
             self.init_harassment_rec()
             ck=False
+            num=0
             while not ck:
+                num+=1
+                if id==1:
+                    print("here we are")
+                #print("第",num,"遍4.2")
                 #4.2
                 self.diff = [[0.0 for i in range(self.n)] for i in range(self.m)]
                 for bx in range(self.m):
@@ -395,10 +403,14 @@ class Bend:
                                         max2=self.P[ax][ay][bi][bj]
                             self.diff[ax][ay]=max1-max2
                 #4.3
+                print("4.3 la")
                 for bx in range(self.m):
                     for by in range(self.n):
                         if id!=self.ID[bx][by]:
                             summ = 0.0
+                            print(bx, " ", by)
+                            if (bx==10 and by==3):
+                                print("!!!!")
                             for (ax,ay,az) in self.harassment_rec[bx][by]:
                                 summ+=az*self.path_length[ax][ay][bx][by]
                             if summ-self.M[bx][by]<1e-6:
@@ -416,13 +428,16 @@ class Bend:
                                         temp-=zz*self.path_length[a1x][a1y][bx][by]
                                         num=0
                                         break
+                                print("RUA")
                                 if temp>1e-6:
+                                    print("RUA")
                                     (a2x, a2y, a2z) = first_diff[1]
                                     step=-1.0
                                     for (xx,yy,zz) in self.harassment_rec[bx][by]:
                                         if xx==a2x and yy==a2y:
                                             step=zz
                                             break
+                                    print(a2x," ",a2y," ",step)
                                     while temp>1e-6:
                                         temp-=step*self.path_length[a2x][a2y][bx][by]
                                         num=1
@@ -472,7 +487,11 @@ class Bend:
             for j in range(self.n):
                 ida=self.ID[i][j]
                 for (x,y,z) in self.harassment_send[i][j]:
+                    if x==-1 and y==-1:
+                        continue
                     idb=self.ID[x][y]
+                    if self.M[x][y]==0:
+                        print("error")
                     tmp=z/self.M[x][y]*self.path_length[i][j][x][y]*self.X[x][y]
                     self.gain[ida][idb]+=tmp
                     self.gain[idb][ida]-=tmp
